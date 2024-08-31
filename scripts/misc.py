@@ -7,8 +7,8 @@ import pathlib
 import numpy as np
 import pandas as pd
 from scipy import signal
-# from ahrs.filters import Madgwick
-# from ahrs.common import orientation
+from sklearn.neighbors import KernelDensity
+from scipy import stats
 
 
 def computer_tilt_for_all_subjects(alldf: pd.DataFrame, accl_lbl: str, nwin: int, causal: bool=True) -> dict:
@@ -377,6 +377,85 @@ def genrate_ul_autocorr_summary(datadf, N=4000):
                                                   _acorr.T[:N, :]))
     return all_ul
 
+
+def entropy(data):
+    data = np.array(data).reshape(-1, 1)
+    # estimate pdf using KDE with gaussian kernel
+    kde = KernelDensity(kernel='gaussian', bandwidth=0.2).fit(data)
+    log_p = kde.score_samples(data)
+    return stats.entropy(np.exp(log_p))
+
+
+# Compute the features for given data frame.
+def get_uluse_from_raters(ratings: np.array) -> np.array:
+    _mean = np.mean(ratings, axis=1)
+    _uluse = _mean > 0.5
+    _uluse[_mean == 0.5] = np.random.rand(np.sum(_mean == 0.5)) > 0.5
+    return _uluse
+
+
+def compute_all_features(datadf: pd.DataFrame, Nin: int, Nout: tuple[int]) -> pd.DataFrame:
+    """Computes all the features using the given data frame.
+    """
+    # UL use
+    _uludf = pd.DataFrame(1.0 * get_uluse_from_raters(datadf[["r1", "r2", "g1", "g2"]].values),
+                          columns=["uluse"])
+    # Accl. norm
+    anormdf = pd.DataFrame(np.linalg.norm(datadf[["ax", "ay", "az"]].values, axis=1),
+                           columns=["norm"])
+
+    # Form the data frame
+    return pd.DataFrame.from_dict({
+        "time": datadf.index,
+        "uluse": _uludf["uluse"].values,
+        "mean_x": datadf["ax"].rolling(window=Nin, min_periods=1).mean().values,
+        "mean_y": datadf["ay"].rolling(window=Nin, min_periods=1).mean().values,
+        "mean_z": datadf["az"].rolling(window=Nin, min_periods=1).mean().values,
+        "var_x": datadf["ax"].rolling(window=Nin, min_periods=1).var().fillna(0).values,
+        "var_y": datadf["ay"].rolling(window=Nin, min_periods=1).var().fillna(0).values,
+        "var_z": datadf["az"].rolling(window=Nin, min_periods=1).var().fillna(0).values,
+        "mean_2": anormdf["norm"].rolling(window=Nin, min_periods=1).mean().values,
+        "var_2": anormdf["norm"].rolling(window=Nin, min_periods=1).var().fillna(0).values,
+        "min_2": anormdf["norm"].rolling(window=Nin, min_periods=1).min().values,
+        "max_2": anormdf["norm"].rolling(window=Nin, min_periods=1).max().values,
+        "ent_2": anormdf["norm"].rolling(window=Nin, min_periods=1).apply(entropy).values,
+        "outfb0": _uludf["uluse"].rolling(window=Nout[0], min_periods=1).mean().values,
+        "outfb1": _uludf["uluse"].rolling(window=Nout[1], min_periods=1).mean().values,
+        "outfb2": _uludf["uluse"].rolling(window=Nout[2], min_periods=1).mean().values
+    }).set_index("time")
+
+
+def get_data_segment(datadf, limb, subj, seg) -> pd.DataFrame:
+    """Returns the dataframe corresponding to the limb, subject, and segment.
+    """
+    _sbjinx = (datadf[limb]["subject"] == subj)
+    _seginx = (datadf[limb]["segment"] == seg)
+    return datadf[limb][_sbjinx & _seginx]
+
+
+def get_features_for_all(datadf: pd.DataFrame, Nin: int, Nout: tuple[int], raw_cols: list[str]) -> pd.DataFrame:
+    """Computes the features for all the segments for both limbs, of all subjects.
+    """
+    # Compute the features for each segment for each patient.
+    data_features_df = {}
+    _allinx = [_inx for _inx in iterate_dataframes(datadf)]
+    for i, (limb, subj, seg) in enumerate(_allinx):
+        sys.stdout.write(f"\r[{i:3d} / {len(_allinx):3d}] {limb:>5s} {subj:2d} {seg:2d}")
+        # Get the dataframe for the segment
+        _df = get_data_segment(datadf, limb, subj, seg)
+        # Compute the features
+        _features = compute_all_features(_df, Nin, Nout)
+        
+        # Check if the limb exists.
+        if limb not in data_features_df:
+            data_features_df[limb] = pd.DataFrame(columns=raw_cols + list(_features.columns))
+        data_features_df[limb] = pd.concat(
+            (data_features_df[limb],
+            _df[raw_cols].join(_features, how="left").reset_index(drop=False)),
+            axis=0,
+            ignore_index=False
+        )
+    return data_features_df 
 
 # def get_largest_continuous_segment_indices(data: pd.DataFrame, subject: int,
 #                                            deltaT: np.timedelta64) -> tuple[int, int]:
