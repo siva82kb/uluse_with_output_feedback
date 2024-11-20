@@ -209,83 +209,6 @@ def compute_accl_magnitude(accl: np.array, time: np.array, nfilt: int=5,
     return amag_df
 
 
-# Generate all possible combinations of parameters.
-# def generate_param_combinations_am(param_ranges: dict) -> dict:
-#     """
-#     Generate all possible combinations of parameters.
-#     """
-#     for _fc in param_ranges["fc"]:
-#         for _nc in param_ranges["nc"]:
-#             for _nam in param_ranges["nam"]:
-#                 yield {
-#                     "fc": _fc,
-#                     "nc": int(_nc),
-#                     "nam": int(_nam)
-#                 }
-
-
-# # Generate all possible combinations of parameters.
-# def generate_param_combinations_gmac(param_ranges: dict) -> dict:
-#     """
-#     Generate all possible combinations of parameters.
-#     """
-#     for _np in param_ranges["np"]:
-#         for _fc in param_ranges["fc"]:
-#             for _nc in param_ranges["nc"]:
-#                 for _nam in param_ranges["nam"]:
-#                     for _pth in param_ranges["p_th"]:
-#                         for _pthb in param_ranges["p_th_band"]:
-#                             for _amth in param_ranges["am_th"]:
-#                                 for _amthb in param_ranges["am_th_band"]:
-#                                     yield {
-#                                         "np": int(_np),
-#                                         "fc": _fc,
-#                                         "nc": int(_nc),
-#                                         "nam": int(_nam),
-#                                         "p_th": _pth,
-#                                         "p_th_band": _pthb,
-#                                         "am_th": _amth,
-#                                         "am_th_band": _amthb
-#                                     }
-
-
-# # Generate all possible combinations of parameters with enumeration.
-# def generate_param_combinations_gmac_wenum(param_ranges: dict):
-#     """
-#     Generate all possible combinations of parameters.
-#     """
-#     for i1, _np in enumerate(param_ranges["np"]):
-#         for i2, _fc in enumerate(param_ranges["fc"]):
-#             for i3, _nc in enumerate(param_ranges["nc"]):
-#                 for i4, _nam in enumerate(param_ranges["nam"]):
-#                     for i5, _pth in enumerate(param_ranges["p_th"]):
-#                         for i6, _pthb in enumerate(param_ranges["p_th_band"]):
-#                             for i7, _amth in enumerate(param_ranges["am_th"]):
-#                                 for i8, _amthb in enumerate(param_ranges["am_th_band"]):
-#                                     yield (
-#                                         {
-#                                             "np": i1,
-#                                             "fc": i2,
-#                                             "nc": i3,
-#                                             "nam": i4,
-#                                             "p_th": i5,
-#                                             "p_th_band": i6,
-#                                             "am_th": i7,
-#                                             "am_th_band": i8
-#                                         }, 
-#                                         {
-#                                             "np": int(_np),
-#                                             "fc": _fc,
-#                                             "nc": int(_nc),
-#                                             "nam": int(_nam),
-#                                             "p_th": _pth,
-#                                             "p_th_band": _pthb,
-#                                             "am_th": _amth,
-#                                             "am_th_band": _amthb
-#                                         }
-#                                     )
-
-
 def read_summarize_data(datadir: str, dT: float) -> dict:
     """Read organize data from all control subjects and patients.
     """
@@ -395,7 +318,7 @@ def get_uluse_from_raters(ratings: np.array) -> np.array:
     return _uluse
 
 
-def compute_all_features(datadf: pd.DataFrame, Nin: int, Nout: tuple[int]) -> pd.DataFrame:
+def compute_all_features(datadf: pd.DataFrame, Nin: int) -> pd.DataFrame:
     """Computes all the features using the given data frame.
     """
     # UL use
@@ -419,11 +342,7 @@ def compute_all_features(datadf: pd.DataFrame, Nin: int, Nout: tuple[int]) -> pd
         "var_2": anormdf["norm"].rolling(window=Nin, min_periods=1).var().fillna(0).values,
         "min_2": anormdf["norm"].rolling(window=Nin, min_periods=1).min().values,
         "max_2": anormdf["norm"].rolling(window=Nin, min_periods=1).max().values,
-        "ent_2": anormdf["norm"].rolling(window=Nin, min_periods=1).apply(entropy).values,
-        "outfb0": _uludf["uluse"].rolling(window=Nout[0], min_periods=1).mean().values,
-        "outfb1": _uludf["uluse"].rolling(window=Nout[1], min_periods=1).mean().values,
-        "outfb2": _uludf["uluse"].rolling(window=Nout[2], min_periods=1).mean().values,
-        "outfb3": _uludf["uluse"].rolling(window=Nout[3], min_periods=1).mean().values
+        "ent_2": anormdf["norm"].rolling(window=Nin, min_periods=1).apply(entropy).values
     }).set_index("time")
 
 
@@ -435,7 +354,7 @@ def get_data_segment(datadf, limb, subj, seg) -> pd.DataFrame:
     return datadf[limb][_sbjinx & _seginx]
 
 
-def get_features_for_all(datadf: pd.DataFrame, Nin: int, Nout: tuple[int], raw_cols: list[str]) -> pd.DataFrame:
+def get_features_for_all(datadf: pd.DataFrame, Nin: int, raw_cols: list[str]) -> pd.DataFrame:
     """Computes the features for all the segments for both limbs, of all subjects.
     """
     # Compute the features for each segment for each patient.
@@ -446,7 +365,7 @@ def get_features_for_all(datadf: pd.DataFrame, Nin: int, Nout: tuple[int], raw_c
         # Get the dataframe for the segment
         _df = get_data_segment(datadf, limb, subj, seg)
         # Compute the features
-        _features = compute_all_features(_df, Nin, Nout)
+        _features = compute_all_features(_df, Nin)
         
         # Check if the limb exists.
         if limb not in data_features_df:
