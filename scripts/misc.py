@@ -9,6 +9,7 @@ import pandas as pd
 from scipy import signal
 from sklearn.neighbors import KernelDensity
 from scipy import stats
+from sklearn.metrics import confusion_matrix, make_scorer
 
 
 def computer_tilt_for_all_subjects(alldf: pd.DataFrame, accl_lbl: str, nwin: int, causal: bool=True) -> dict:
@@ -209,80 +210,80 @@ def compute_accl_magnitude(accl: np.array, time: np.array, nfilt: int=5,
 
 
 # Generate all possible combinations of parameters.
-def generate_param_combinations_am(param_ranges: dict) -> dict:
-    """
-    Generate all possible combinations of parameters.
-    """
-    for _fc in param_ranges["fc"]:
-        for _nc in param_ranges["nc"]:
-            for _nam in param_ranges["nam"]:
-                yield {
-                    "fc": _fc,
-                    "nc": int(_nc),
-                    "nam": int(_nam)
-                }
+# def generate_param_combinations_am(param_ranges: dict) -> dict:
+#     """
+#     Generate all possible combinations of parameters.
+#     """
+#     for _fc in param_ranges["fc"]:
+#         for _nc in param_ranges["nc"]:
+#             for _nam in param_ranges["nam"]:
+#                 yield {
+#                     "fc": _fc,
+#                     "nc": int(_nc),
+#                     "nam": int(_nam)
+#                 }
 
 
-# Generate all possible combinations of parameters.
-def generate_param_combinations_gmac(param_ranges: dict) -> dict:
-    """
-    Generate all possible combinations of parameters.
-    """
-    for _np in param_ranges["np"]:
-        for _fc in param_ranges["fc"]:
-            for _nc in param_ranges["nc"]:
-                for _nam in param_ranges["nam"]:
-                    for _pth in param_ranges["p_th"]:
-                        for _pthb in param_ranges["p_th_band"]:
-                            for _amth in param_ranges["am_th"]:
-                                for _amthb in param_ranges["am_th_band"]:
-                                    yield {
-                                        "np": int(_np),
-                                        "fc": _fc,
-                                        "nc": int(_nc),
-                                        "nam": int(_nam),
-                                        "p_th": _pth,
-                                        "p_th_band": _pthb,
-                                        "am_th": _amth,
-                                        "am_th_band": _amthb
-                                    }
+# # Generate all possible combinations of parameters.
+# def generate_param_combinations_gmac(param_ranges: dict) -> dict:
+#     """
+#     Generate all possible combinations of parameters.
+#     """
+#     for _np in param_ranges["np"]:
+#         for _fc in param_ranges["fc"]:
+#             for _nc in param_ranges["nc"]:
+#                 for _nam in param_ranges["nam"]:
+#                     for _pth in param_ranges["p_th"]:
+#                         for _pthb in param_ranges["p_th_band"]:
+#                             for _amth in param_ranges["am_th"]:
+#                                 for _amthb in param_ranges["am_th_band"]:
+#                                     yield {
+#                                         "np": int(_np),
+#                                         "fc": _fc,
+#                                         "nc": int(_nc),
+#                                         "nam": int(_nam),
+#                                         "p_th": _pth,
+#                                         "p_th_band": _pthb,
+#                                         "am_th": _amth,
+#                                         "am_th_band": _amthb
+#                                     }
 
 
-# Generate all possible combinations of parameters with enumeration.
-def generate_param_combinations_gmac_wenum(param_ranges: dict):
-    """
-    Generate all possible combinations of parameters.
-    """
-    for i1, _np in enumerate(param_ranges["np"]):
-        for i2, _fc in enumerate(param_ranges["fc"]):
-            for i3, _nc in enumerate(param_ranges["nc"]):
-                for i4, _nam in enumerate(param_ranges["nam"]):
-                    for i5, _pth in enumerate(param_ranges["p_th"]):
-                        for i6, _pthb in enumerate(param_ranges["p_th_band"]):
-                            for i7, _amth in enumerate(param_ranges["am_th"]):
-                                for i8, _amthb in enumerate(param_ranges["am_th_band"]):
-                                    yield (
-                                        {
-                                            "np": i1,
-                                            "fc": i2,
-                                            "nc": i3,
-                                            "nam": i4,
-                                            "p_th": i5,
-                                            "p_th_band": i6,
-                                            "am_th": i7,
-                                            "am_th_band": i8
-                                        }, 
-                                        {
-                                            "np": int(_np),
-                                            "fc": _fc,
-                                            "nc": int(_nc),
-                                            "nam": int(_nam),
-                                            "p_th": _pth,
-                                            "p_th_band": _pthb,
-                                            "am_th": _amth,
-                                            "am_th_band": _amthb
-                                        }
-                                    )
+# # Generate all possible combinations of parameters with enumeration.
+# def generate_param_combinations_gmac_wenum(param_ranges: dict):
+#     """
+#     Generate all possible combinations of parameters.
+#     """
+#     for i1, _np in enumerate(param_ranges["np"]):
+#         for i2, _fc in enumerate(param_ranges["fc"]):
+#             for i3, _nc in enumerate(param_ranges["nc"]):
+#                 for i4, _nam in enumerate(param_ranges["nam"]):
+#                     for i5, _pth in enumerate(param_ranges["p_th"]):
+#                         for i6, _pthb in enumerate(param_ranges["p_th_band"]):
+#                             for i7, _amth in enumerate(param_ranges["am_th"]):
+#                                 for i8, _amthb in enumerate(param_ranges["am_th_band"]):
+#                                     yield (
+#                                         {
+#                                             "np": i1,
+#                                             "fc": i2,
+#                                             "nc": i3,
+#                                             "nam": i4,
+#                                             "p_th": i5,
+#                                             "p_th_band": i6,
+#                                             "am_th": i7,
+#                                             "am_th_band": i8
+#                                         }, 
+#                                         {
+#                                             "np": int(_np),
+#                                             "fc": _fc,
+#                                             "nc": int(_nc),
+#                                             "nam": int(_nam),
+#                                             "p_th": _pth,
+#                                             "p_th_band": _pthb,
+#                                             "am_th": _amth,
+#                                             "am_th_band": _amthb
+#                                         }
+#                                     )
 
 
 def read_summarize_data(datadir: str, dT: float) -> dict:
@@ -421,7 +422,8 @@ def compute_all_features(datadf: pd.DataFrame, Nin: int, Nout: tuple[int]) -> pd
         "ent_2": anormdf["norm"].rolling(window=Nin, min_periods=1).apply(entropy).values,
         "outfb0": _uludf["uluse"].rolling(window=Nout[0], min_periods=1).mean().values,
         "outfb1": _uludf["uluse"].rolling(window=Nout[1], min_periods=1).mean().values,
-        "outfb2": _uludf["uluse"].rolling(window=Nout[2], min_periods=1).mean().values
+        "outfb2": _uludf["uluse"].rolling(window=Nout[2], min_periods=1).mean().values,
+        "outfb3": _uludf["uluse"].rolling(window=Nout[3], min_periods=1).mean().values
     }).set_index("time")
 
 
@@ -456,6 +458,51 @@ def get_features_for_all(datadf: pd.DataFrame, Nin: int, Nout: tuple[int], raw_c
             ignore_index=False
         )
     return data_features_df 
+
+def generate_windowed_uluse(datadf):
+    """Generates a windowed version of the uluse data.
+    """
+    _ulusew = datadf['uluse'].rolling(window=Nin, min_periods=1).mean().values
+    _ulusew[_ulusew > 0.5] = 1.0
+    _ulusew[_ulusew < 0.5] = 0.0
+    _ulusew[_ulusew == 0.5] = np.random.choice([0, 1], size=np.sum(_ulusew == 0.5))
+    return _ulusew
+
+def outerloop_loso_split(limbdf, subcol):
+    """Iterates over the leave-one-subject-out training and testing data.
+    """
+    for subj, subjdf in limbdf.groupby(subcol):
+        yield (limbdf[limbdf[subcol] != subj], subjdf)
+
+def innerloop_loso_split(train_df, subcol):
+    """Iterates over the leave-one-segment-out training and validation data.
+    """
+    _tempdf = train_df.copy()
+    _tempdf['inx'] = range(_tempdf.shape[0])
+    folds = []
+    for subj, subjdf in _tempdf.groupby(subcol):
+        val_inx = subjdf['inx'].values
+        train_inx = _tempdf[_tempdf[subcol] != subj]['inx'].values
+        folds.append((train_inx, val_inx))
+    return folds
+
+# Define Youden index function
+def youden_index_score(y_true, y_pred):
+    # Compute confusion matrix
+    tn, fp, fn, tp = confusion_matrix(y_true, y_pred).ravel()
+    
+    # Sensitivity (Recall for Positive Class)
+    sensitivity = tp / (tp + fn) if (tp + fn) > 0 else 0
+    
+    # Specificity
+    specificity = tn / (tn + fp) if (tn + fp) > 0 else 0
+    
+    # Youden index
+    youden_index = sensitivity + specificity - 1
+    return youden_index
+
+# Wrap it into a scorer
+youden_scorer = make_scorer(youden_index_score, greater_is_better=True)
 
 # def get_largest_continuous_segment_indices(data: pd.DataFrame, subject: int,
 #                                            deltaT: np.timedelta64) -> tuple[int, int]:
